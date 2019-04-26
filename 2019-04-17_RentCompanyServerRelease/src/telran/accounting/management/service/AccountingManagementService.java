@@ -15,47 +15,47 @@ import telran.accounting.api.AccountingCodes;
 import telran.accounting.interfaces.IAccountingManagement;
 import telran.accounting.management.domain.Account;
 import telran.accounting.management.domain.repo.AccountRepository;
-
 @Service
-public class AccountingManagementService implements IAccountingManagement {
+public class AccountingManagementService 
+implements IAccountingManagement{
 	@Autowired
 	PasswordEncoder encoder;
 	@Value("${passwordLength:8}")
 	int passwordLength;
 	@Autowired
-	AccountRepository accountRepository;
+AccountRepository accountRepository;
 	@Value("${n_last_hashcodes:3}")
-	int n_last_hashcodes;
-
+	 int n_last_hashcodes;
 	@Override
 	public AccountingCodes addAccount(AccountDto account) {
-		if (accountRepository.existsById(account.username)) {
+		if(accountRepository.existsById(account.username)) {
 			return AccountingCodes.ACCOUNT_ALREADY_EXISTS;
 		}
-		if (!isPasswordValid(account.password)) {
+		if(!isPasswordValid(account.password)) {
 			return AccountingCodes.WRONG_PASSWORD;
 		}
-		String username = account.username;
-		String hashCode = getHashCode(account.password);
-		LocalDateTime activationDate = LocalDateTime.now();
-		Account accountDoc = new Account(username, hashCode, activationDate, account.roles);
+		String username=account.username;
+		String hashCode=getHashCode(account.password);
+		LocalDateTime activationDate=LocalDateTime.now();
+		Account accountDoc=
+				new Account(username, hashCode, activationDate,account.roles);
 		accountRepository.save(accountDoc);
 		return AccountingCodes.OK;
 	}
 
 	private String getHashCode(String password) {
-
+		
 		return encoder.encode(password);
 	}
 
 	private boolean isPasswordValid(String password) {
-
-		return password.length() >= passwordLength;
+		
+		return password.length()>=passwordLength;
 	}
 
 	@Override
 	public AccountingCodes removeAccount(String username) {
-		if (!accountRepository.existsById(username)) {
+		if(!accountRepository.existsById(username)) {
 			return AccountingCodes.ACCOUNT_NOT_EXISTS;
 		}
 		accountRepository.deleteById(username);
@@ -64,18 +64,18 @@ public class AccountingManagementService implements IAccountingManagement {
 
 	@Override
 	public AccountingCodes updatePassword(String username, String password) {
-		if (!isPasswordValid(password)) {
+		if(!isPasswordValid(password)) {
 			return AccountingCodes.WRONG_PASSWORD;
 		}
-		Account account = accountRepository.findById(username).orElse(null);
-		if (account == null) {
+		Account account=accountRepository.findById(username).orElse(null);
+		if(account==null) {
 			return AccountingCodes.ACCOUNT_NOT_EXISTS;
 		}
-		LinkedList<String> lastHashCodes = account.getLastHashCodes();
-		if (isPasswordFromLast(lastHashCodes, password)) {
+		LinkedList<String> lastHashCodes=account.getLastHashCodes();
+		if(isPasswordFromLast(lastHashCodes,password)) {
 			return AccountingCodes.WRONG_PASSWORD;
 		}
-		if (lastHashCodes.size() == n_last_hashcodes) {
+		if(lastHashCodes.size()==n_last_hashcodes) {
 			lastHashCodes.removeFirst();
 		}
 		lastHashCodes.add(account.getHashCode());
@@ -86,28 +86,28 @@ public class AccountingManagementService implements IAccountingManagement {
 	}
 
 	private boolean isPasswordFromLast(LinkedList<String> lastHashCodes, String password) {
-
-		return lastHashCodes.stream().anyMatch(c -> encoder.matches(password, c));
+		
+		return lastHashCodes.stream().anyMatch(c->encoder.matches(password, c));
 	}
 
 	@Override
 	public AccountingCodes revokeAccount(String username) {
-		Account account = accountRepository.findById(username).orElse(null);
-		if (account == null)
-			return AccountingCodes.ACCOUNT_NOT_EXISTS;
-		if (account.isRevoked())
-			return AccountingCodes.ALREADY_REVOKED;
-		account.setRevoked(true);
-		accountRepository.save(account);
+	Account account=accountRepository.findById(username).orElse(null);
+	if(account==null)
+		return AccountingCodes.ACCOUNT_NOT_EXISTS;
+	if(account.isRevoked())
+		return AccountingCodes.ALREADY_REVOKED;
+	account.setRevoked(true);
+	accountRepository.save(account);
 		return AccountingCodes.OK;
 	}
 
 	@Override
 	public AccountingCodes activateAccount(String username) {
-		Account account = accountRepository.findById(username).orElse(null);
-		if (account == null)
+		Account account=accountRepository.findById(username).orElse(null);
+		if(account==null)
 			return AccountingCodes.ACCOUNT_NOT_EXISTS;
-		if (!account.isRevoked())
+		if(!account.isRevoked())
 			return AccountingCodes.ALREADY_ACTIVATED;
 		account.setRevoked(false);
 		account.setActivationDate(LocalDateTime.now());
@@ -117,29 +117,29 @@ public class AccountingManagementService implements IAccountingManagement {
 
 	@Override
 	public String getPasswordHash(String username) {
-		Account account = accountRepository.findById(username).orElse(null);
-		return account == null || account.isRevoked() ? null : account.getHashCode();
+		Account account=accountRepository.findById(username).orElse(null);
+		return account==null || account.isRevoked()?null:account.getHashCode();
 	}
 
 	@Override
 	public LocalDateTime getActivationDate(String username) {
-		Account account = accountRepository.findById(username).orElse(null);
-		return account == null || account.isRevoked() ? null : account.getActivationDate();
+		Account account=accountRepository.findById(username).orElse(null);
+		return account==null || account.isRevoked()?null:account.getActivationDate();
 	}
 
 	@Override
 	public HashSet<String> getRoles(String username) {
-		Account account = accountRepository.findById(username).orElse(null);
-		return account == null || account.isRevoked() ? null : account.getRoles();
+		Account account=accountRepository.findById(username).orElse(null);
+		return account==null || account.isRevoked()?null:account.getRoles();
 	}
 
 	@Override
 	public AccountingCodes addRole(String username, String role) {
-		Account account = accountRepository.findById(username).orElse(null);
-		if (account == null)
+		Account account=accountRepository.findById(username).orElse(null);
+		if(account==null)
 			return AccountingCodes.ACCOUNT_NOT_EXISTS;
-		HashSet<String> roles = account.getRoles();
-		if (roles.contains(role))
+		HashSet<String>roles=account.getRoles();
+		if(roles.contains(role))
 			return AccountingCodes.ROLE_ALREADY_EXISTS;
 		roles.add(role);
 		accountRepository.save(account);
@@ -148,11 +148,11 @@ public class AccountingManagementService implements IAccountingManagement {
 
 	@Override
 	public AccountingCodes removeRole(String username, String role) {
-		Account account = accountRepository.findById(username).orElse(null);
-		if (account == null)
+		Account account=accountRepository.findById(username).orElse(null);
+		if(account==null)
 			return AccountingCodes.ACCOUNT_NOT_EXISTS;
-		HashSet<String> roles = account.getRoles();
-		if (!roles.contains(role))
+		HashSet<String>roles=account.getRoles();
+		if(!roles.contains(role))
 			return AccountingCodes.ROLE_NOT_EXISTS;
 		roles.remove(role);
 		accountRepository.save(account);
